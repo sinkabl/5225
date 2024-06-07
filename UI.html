@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Upload Image and Get Tags</title>
+</head>
+<body>
+    <h1>Upload Image and Get Tags</h1>
+    <input type="file" id="imageInput" accept="image/*">
+    <button onclick="uploadAndFetchTags()">Upload Image</button>
+    <br>
+    <div id="objectName"></div>
+    <h2>Tags</h2>
+    <div id="tags"></div>
+    <h2>Related Images</h2>
+    <div id="relatedImages"></div>
+    <script>
+        async function uploadAndFetchTags() {
+            console.log('uploadAndFetchTags function called');
+            const fileInput = document.getElementById('imageInput');
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('Please select a file.');
+                return;
+            }
+            const objectName = file.name;
+            document.getElementById('objectName').textContent = `Object name: ${objectName}`;
+            console.log(`Object name: ${objectName}`);
+            try {
+                // 获取预签名URL
+                const presignedUrlResponse = await fetch(`https://h1iuj20gg5.execute-api.us-east-1.amazonaws.com/dev/5225toS3?object_name=${objectName}`);
+                console.log('Presigned URL response:', presignedUrlResponse);
+                if (!presignedUrlResponse.ok) {
+                    console.error('Failed to get presigned URL:', presignedUrlResponse.status);
+                    throw new Error('Failed to get presigned URL.');
+                }
+                const presignedUrlData = await presignedUrlResponse.json();
+                const presignedUrl = presignedUrlData.url;
+                console.log(`Presigned URL: ${presignedUrl}`);
+                // 上传图片到S3
+                const uploadResponse = await fetch(presignedUrl, {
+                    method: 'PUT',
+                    body: file,
+                    headers: {
+                        'Content-Type': file.type
+                    }
+                });
+                console.log('Upload response:', uploadResponse);
+                if (!uploadResponse.ok) {
+                    console.error('Failed to upload image:', uploadResponse.status);
+                    throw new Error('Failed to upload image.');
+                }
+                console.log('Image uploaded successfully.');
+                // 获取数据库内容
+                const dbResponse = await fetch('https://hc2ynd7hpb.execute-api.us-east-1.amazonaws.com/dev/5225toDB');
+                console.log('Database response:', dbResponse);
+                if (!dbResponse.ok) {
+                    console.error('Failed to fetch database:', dbResponse.status);
+                    throw new Error('Failed to fetch database.');
+                }
+                const dbData = await dbResponse.json();
+                console.log('Database response:', dbData);
+                // 显示识别出的tags
+                const uploadedImageInfo = dbData.find(item => item.ImageURL.includes(objectName));
+                console.log('Uploaded image info:', uploadedImageInfo);
+                const tags = uploadedImageInfo ? uploadedImageInfo.Tags : [];
+                console.log('Tags:', tags);
+                document.getElementById('tags').textContent = tags.join(', ');
+                // 显示相同tag的图片
+                const relatedImages = dbData.filter(item => item.Tags.some(tag => tags.includes(tag)));
+                console.log('Related images:', relatedImages);
+                const relatedImagesContainer = document.getElementById('relatedImages');
+                relatedImagesContainer.innerHTML = '';
+                relatedImages.forEach(image => {
+                    const imgElement = document.createElement('img');
+                    imgElement.src = image.ImageURL;
+                    imgElement.style.maxWidth = '200px';
+                    relatedImagesContainer.appendChild(imgElement);
+                });
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error in processing image.');
+            }
+        }
+    </script>
+</body>
+</html>
