@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Get Full Image URL</title>
+</head>
+<body>
+    <h1>Get Full Image URL</h1>
+    <input type="text" id="thumbnailUrl" placeholder="Enter Thumbnail URL" style="width: 80%;">
+    <button onclick="getFullImageUrl()">Get Full Image URL</button>
+    <p id="result"></p>
+
+    <script>
+        async function getFullImageUrl() {
+            const thumbnailUrl = document.getElementById('thumbnailUrl').value;
+            const apiUrl = `https://k9be443btg.execute-api.us-east-1.amazonaws.com/dev/getFullImageUrl?thumbnail_url=${encodeURIComponent(thumbnailUrl)}`;
+            
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'GET'
+                });
+                const data = await response.json();
+                
+                console.log('API Response:', data);
+                
+                if (response.ok) {
+                    if (data.full_image_url) {
+                        document.getElementById('result').innerText = `Full Image URL: ${data.full_image_url}`;
+                    } else {
+                        document.getElementById('result').innerText = `Error: Full Image URL not found in the response.`;
+                    }
+                } else {
+                    document.getElementById('result').innerText = `Error: ${data.error}`;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('result').innerText = `Error: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

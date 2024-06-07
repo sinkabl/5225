@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find Images by Tag</title>
+</head>
+<body>
+    <h1>Find Images by Tag</h1>
+    <input type="text" id="tag" placeholder="Enter Tag" style="width: 80%;">
+    <button onclick="findImages()">Find Images</button>
+    <p id="result"></p>
+
+    <script>
+        async function findImages() {
+            const tag = document.getElementById('tag').value;
+            const apiUrl = `https://k9be443btg.execute-api.us-east-1.amazonaws.com/dev/SearchTag?tag=${encodeURIComponent(tag)}`;
+            
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                
+                console.log('API Response:', data);
+                
+                if (response.ok) {
+                    if (data.matching_images && data.matching_images.length > 0) {
+                        document.getElementById('result').innerHTML = `Matching Images:<br>${data.matching_images.map(url => `<a href="${url}" target="_blank">${url}</a>`).join('<br>')}`;
+                    } else {
+                        document.getElementById('result').innerText = `No matching images found.`;
+                    }
+                } else {
+                    document.getElementById('result').innerText = `Error: ${data.error}`;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('result').innerText = `Error: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
